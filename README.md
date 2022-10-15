@@ -1,5 +1,7 @@
 # Example Object Detection
 
+This is a simple example-project to detect objects in images using pretrained MobileNet model.
+
 ## Prepare
 
 Make sure you have [poetry](https://python-poetry.org/docs/#installation) installed on your system.
