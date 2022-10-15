@@ -7,10 +7,12 @@ authors = ["Stepan Anokhin <stepan.anokhin@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.11"
-opencv-python = "^4.6.0"
+opencv-python = "4.5.4.60"
 numpy = "^1.23.4"
 tensorflow = "^2.10.0"
 luigi = "^3.1.1"
+matplotlib = "^3.6.1"
+PyQt5 = "^5.15.7"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -21,3 +23,5 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 prepare = 'try_object_detection.workflow.prepare_data:run'
+detect = 'try_object_detection.workflow.detect_objects:run_file'
+capture = 'try_object_detection.workflow.detect_objects:run_capture_cli'

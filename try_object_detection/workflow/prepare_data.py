@@ -11,6 +11,7 @@ import luigi.format
 
 from try_object_detection.utils.io_utils import io_chunks
 from try_object_detection.utils.tar import untar
+from try_object_detection.workflow.common import CompositeTarget
 
 
 class DownloadTask(luigi.Task):
@@ -68,10 +69,10 @@ class PrepareModel(luigi.Task):
         return self.MOBNET_FILE.removesuffix(".tar.gz")
 
 
-@dataclass
+@dataclass(frozen=True)
 class PreparedData:
     """Prepared data description."""
-    model_path: str
+    model_root: str
     config_path: str
     labels_path: str
 
@@ -80,6 +81,21 @@ class PreparedData:
         """Load labels."""
         with open(self.labels_path) as file:
             return tuple(map(str.strip, file.readlines()))
+
+    @cached_property
+    def model_file(self) -> str:
+        """Get model file."""
+        return os.path.join(self.model_root, "frozen_inference_graph.pb")
+
+
+class PrepareDataTarget(CompositeTarget):
+    """Prepared data target."""
+
+    @property
+    def result(self) -> PreparedData:
+        """Get prepared data."""
+        model, config, labels = self._inputs
+        return PreparedData(model_root=model.path, config_path=config.path, labels_path=labels.path)
 
 
 class PrepareData(luigi.Task):
@@ -98,20 +114,18 @@ class PrepareData(luigi.Task):
         yield DownloadTask(url=self.CONFIG_URL, destination=os.path.join(self.folder, self.CONFIG_FILE))
         yield DownloadTask(url=self.LABELS_URL, destination=os.path.join(self.folder, "coco.names"))
 
-    def complete(self):
-        """Always should check for requirements."""
-        return False
+    def output(self) -> PrepareDataTarget:
+        return PrepareDataTarget(self.input())
 
     @property
     def result(self) -> PreparedData:
         """Get prepared data results."""
-        model, config, labels = self.input()
-        return PreparedData(model_path=model.path, config_path=config.path, labels_path=labels.path)
+        return self.output().result
 
 
-def run() -> PreparedData:
+def run(folder: str = "./data") -> PreparedData:
     """Download required data."""
-    prepare = PrepareData()
+    prepare = PrepareData(folder=folder)
     luigi.build([prepare], local_scheduler=True, workers=1)
     return prepare.result
 
