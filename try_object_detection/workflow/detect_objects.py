@@ -1,7 +1,7 @@
 import os
 import sys
 from os import fspath
-from typing import Optional, Union
+from typing import Union
 
 import cv2
 import luigi
@@ -9,7 +9,8 @@ from luigi.util import inherits
 
 from try_object_detection.detection import DetectionResults
 from try_object_detection.detection.mobile_net import load_model
-from try_object_detection.utils.types import Seq
+from try_object_detection.utils.types import Seq, Opt
+from try_object_detection.utils.ui import window_closed
 from try_object_detection.workflow import PreparedData, PrepareData
 from try_object_detection.workflow.common import ConstTarget
 
@@ -19,8 +20,9 @@ class DetectFile(luigi.Task):
     """Detect objects in file."""
 
     file: str = luigi.PathParameter(description="File to be processed", exists=True)
-    out: Optional[str] = luigi.Parameter(default=None, description="Optional output path")
+    out: str = luigi.Parameter(default='', description="Optional output path")
     conf: float = luigi.FloatParameter(default=0.6, description="Confidence threshold.")
+    results: Opt[DetectionResults] = None
 
     def requires(self):
         return self.clone(PrepareData)
@@ -42,6 +44,7 @@ class DetectFile(luigi.Task):
         else:
             cv2.imshow("Main", image)
             cv2.waitKeyEx()
+        self.results = results
 
     @property
     def prepared_data(self) -> PreparedData:
@@ -70,7 +73,7 @@ class CaptureTask(luigi.Task):
             results = DetectionResults.get(model.detect(frame, confThreshold=self.conf), prepared.labels)
             results.draw(frame)
             cv2.imshow("Main", frame)
-            if cv2.waitKey(2) & 0xFF == ord('q'):
+            if window_closed("Main"):
                 break
         cap.release()
         cv2.destroyAllWindows()
@@ -80,10 +83,11 @@ class CaptureTask(luigi.Task):
         return self.input().result
 
 
-def detect_file(file: str, out: str = '', folder: str = "./data"):
+def detect_file(file: str, out: str = '', folder: str = "./data") -> DetectionResults:
     """Detect objects in a single image file."""
     detect = DetectFile(file=file, out=out, folder=folder)
     luigi.build([detect], local_scheduler=True, workers=1)
+    return detect.results
 
 
 def run_file(args: Seq[str] = tuple(sys.argv)):

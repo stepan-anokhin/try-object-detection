@@ -13,6 +13,9 @@ tensorflow = "^2.10.0"
 luigi = "^3.1.1"
 matplotlib = "^3.6.1"
 PyQt5 = "^5.15.7"
+python-telegram-bot = "20.0a0"
+httpx = "0.22.0"
+orjson = "^3.8.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -25,3 +28,4 @@ build-backend = "poetry.core.masonry.api"
 prepare = 'try_object_detection.workflow.prepare_data:run'
 detect = 'try_object_detection.workflow.detect_objects:run_file'
 capture = 'try_object_detection.workflow.detect_objects:run_capture_cli'
+bot = 'try_object_detection.telegram_bot.main:main'
