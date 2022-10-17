@@ -42,13 +42,14 @@ class DetectionResults:
     ) -> np.ndarray:
         """Draw bounding boxes on the image."""
         for cls, conf, box in zip(self.classes, self.confidence, self.bboxes):
-            cv2.rectangle(image, box, border_color, border_width)
-            cv2.putText(
-                image, self.labels[cls - 1],
-                (box[0] + 10, box[1] + 10),
-                text_font,
-                fontScale=text_size,
-                color=text_color,
-                thickness=text_thickness
-            )
+            if 1 <= cls <= len(self.labels):
+                cv2.rectangle(image, box, border_color, border_width)
+                cv2.putText(
+                    image, self.labels[cls - 1],
+                    (box[0] + 10, box[1] + 10),
+                    text_font,
+                    fontScale=text_size,
+                    color=text_color,
+                    thickness=text_thickness
+                )
         return image

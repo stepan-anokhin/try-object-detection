@@ -1,6 +1,7 @@
 import logging
 import os.path
 import tempfile
+from typing import Tuple
 
 import httpx
 import orjson
@@ -39,16 +40,17 @@ async def echo(update: Update, context) -> None:
     await update.message.reply_text(data["replies"][0])
 
 
-def description(results: DetectionResults) -> str:
+def description(results: DetectionResults) -> Tuple[str, bool]:
     """Get caption for detection results."""
     counts = {}
     for cls in results.classes:
-        label = results.labels[cls - 1]
-        counts[label] = counts.get(label, 0) + 1
+        if 1 <= cls <= len(results.labels):
+            label = results.labels[cls - 1]
+            counts[label] = counts.get(label, 0) + 1
     caption = "Найдено:\n"
     for label, count in counts.items():
         caption += f"{label}: {count}\n"
-    return caption
+    return caption, bool(counts)
 
 
 async def detect(update: Update, context) -> None:
@@ -60,8 +62,8 @@ async def detect(update: Update, context) -> None:
         output_path = os.path.join(tmpdir, "output.jpg")
         await file.download(input_path)
         results = detect_file(input_path, output_path)
-        caption = description(results)
-        if results.classes:
+        caption, detected_known_objects = description(results)
+        if detected_known_objects:
             with open(output_path, "rb") as output_file:
                 await update.message.reply_photo(output_file, quote=True, caption=caption)
         else:
